@@ -28,7 +28,7 @@ class DeepQNetwork:
             observation_shape,
             learning_rate=0.01,
             reward_decay=0.9,
-            e_greedy=0.9,
+            epsilon_max=0.9,
             replace_target_iter=300,
             memory_size=500,
             batch_size=32,
@@ -42,12 +42,12 @@ class DeepQNetwork:
         self.observation_shape = observation_shape
         self.lr = learning_rate
         self.gamma = reward_decay
-        self.epsilon_max = e_greedy
+        self.epsilon_max = epsilon_max    # 最多是90%通过神经网络选择，10%随机选择
         self.replace_target_iter = replace_target_iter
         self.memory_size = memory_size
         self.batch_size = batch_size
         self.epsilon_increment = e_greedy_increment
-        self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
+        self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max  # e_greedy_increment 通过神经网络选择的概率慢慢增加
         self.first_layer_neurno = first_layer_neurno
         self.second_layer_neurno = second_layer_neurno
 
@@ -57,11 +57,11 @@ class DeepQNetwork:
         # 由于图像数据太大了 分开用numpy存
         # self.memoryList = []
         self.memoryObservationNow = np.zeros((self.memory_size, self.observation_shape[0],
-                                              self.observation_shape[1], self.observation_shape[2]), dtype='float16')
+                                              self.observation_shape[1], self.observation_shape[2]), dtype='int16')
         self.memoryObservationLast = np.zeros((self.memory_size, self.observation_shape[0],
-                                               self.observation_shape[1], self.observation_shape[2]), dtype='float16')
-        self.memoryReward = np.zeros(self.memory_size, dtype='float16')
-        self.memoryAction = np.zeros(self.memory_size, dtype='float16')
+                                               self.observation_shape[1], self.observation_shape[2]), dtype='int16')
+        self.memoryReward = np.zeros(self.memory_size, dtype='float64')
+        self.memoryAction = np.zeros(self.memory_size, dtype='int16')
 
         # consist of [target_net, evaluate_net]
         self._build_net()
@@ -74,6 +74,7 @@ class DeepQNetwork:
 
         # 记录cost然后画出来
         self.cost_his = []
+        self.reward = []
 
     def _build_net(self):
         # ------------------ 建造估计层 ------------------
@@ -180,6 +181,7 @@ class DeepQNetwork:
         # 插入一个新的维度 矩阵运算时需要新的维度来运算
         observation = observation[np.newaxis, :, :, np.newaxis]
 
+
         if np.random.uniform() < self.epsilon:
             # 向前反馈，得到每一个当前状态每一个action的Q值
             # 这里使用估计网络，也就是要更新参数的网络
@@ -261,6 +263,7 @@ class DeepQNetwork:
         # increasing epsilon
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
+        # print(self.epsilon)
 
     def plot_cost(self):
         import matplotlib.pyplot as plt

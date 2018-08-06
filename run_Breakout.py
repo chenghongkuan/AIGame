@@ -14,7 +14,7 @@ import numpy as np
 import time
 from receiveThread import myThread
 
-env = gym.make('SpaceInvaders-v0')
+env = gym.make('BreakoutDeterministic-v4')
 env = env.unwrapped
 
 print(env.action_space)
@@ -58,8 +58,12 @@ for i_episode in range(1000):
         action = RL.choose_action(observation)
 
         observation_, reward, done, info = env.step(action)
-        # 给reward做归一化处理
-        reward = reward / 200
+        # 给reward做处理
+        if reward > 0:
+            reward = 1
+        elif reward < 0:
+            reward = -1
+
         # 使用opencv做灰度化处理
         observation_ = cv2.cvtColor(observation_, cv2.COLOR_BGR2GRAY)
         observation_ = cv2.resize(observation_, (inputImageSize[1], inputImageSize[0]))
@@ -74,7 +78,8 @@ for i_episode in range(1000):
             t1 = time.time()
             if total_steps < 1010:
                 print("学习一次时间：", t1 - t0)
-
+        else:
+            time.sleep(0.08)
         if done:
             total_reward_list.append(total_reward)
             print('episode: ', i_episode,
